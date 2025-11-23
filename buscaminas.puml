@@ -1,0 +1,21 @@
+@startuml
+title Secuencia - Descubrir celda
+
+actor Jugador
+participant "Interfaz (Button)" as UI
+participant "Buscaminas" as BM
+participant "Tablero" as TAB
+
+Jugador -> UI : Clic en celda
+UI -> BM : revelar(f,c)
+BM -> TAB : consulta valor celda
+alt Mina encontrada
+    BM -> BM : fin_del_juego(False)
+else Número o 0
+    BM -> BM : mostrar_celda(f,c)
+    BM -> BM : verificar_victoria()
+    alt Victoria
+        BM -> BM : fin_del_juego(True)
+    end
+end
+@enduml

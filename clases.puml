@@ -1,0 +1,35 @@
+@startuml
+class Juego {
+    - titulo : str
+    + __init__(titulo="Juego")
+    + iniciar()
+    + fin_del_juego(victoria)
+}
+
+class JuegoConTablero {
+    - _filas : int
+    - _columnas : int
+    - _tablero : list
+    + __init__(filas, columnas, titulo="Juego con Tablero")
+    + crear_tablero()
+    + mostrar_tablero()
+}
+
+class Buscaminas {
+    - master : tk.Tk
+    - _minas : int
+    - _botones : dict
+    - _colores : dict
+    + __init__(master, filas=8, columnas=8, minas=10)
+    - _colocar_minas()
+    - _contar_minas()
+    - _crear_interfaz()
+    - _revelar(f, c)
+    - _mostrar_celda(f, c)
+    - _verificar_victoria()
+    + fin_del_juego(victoria)
+}
+
+Juego <|-- JuegoConTablero
+JuegoConTablero <|-- Buscaminas
+@enduml
