@@ -1,0 +1,76 @@
+@startuml Buscaminas - Diagrama de Secuencia
+
+actor Usuario
+
+participant "Interfaz de Usuario" as UI
+participant "Controlador del Juego" as Controller
+participant "Generador de Minas" as MineGenerator
+participant "Calculador Numérico" as Calculator
+participant "Base de Datos" as DB
+participant "Gestor de Estadísticas" as StatsManager
+
+
+
+Usuario -> UI: Ingresa credenciales
+UI -> Controller: autenticarUsuario(credenciales)
+Controller -> DB: verificarCredenciales(credenciales)
+DB --> Controller: resultadoAutenticación
+Controller --> UI: estadoAutenticación
+UI --> Usuario: Muestra pantalla principal
+
+
+
+Usuario -> UI: Selecciona dificultad
+UI -> Controller: establecerDificultad(dificultad)
+Controller -> MineGenerator: configurarTablero(dificultad)
+MineGenerator --> Controller: dimensionesTablero
+Controller --> UI: confirmarConfiguración
+
+
+
+Controller -> MineGenerator: generarMinas(dificultad)
+MineGenerator --> Controller: posicionesMinas
+Controller -> Calculator: calcularNumerosCasillas(posicionesMinas)
+Calculator --> Controller: tableroConNumeros
+Controller -> DB: guardarTablero(tableroConNumeros)
+DB --> Controller: confirmaciónGuardado
+Controller -> UI: mostrarTablero(tablero)
+
+
+
+loop Mientras juego activo
+    Usuario -> UI: Clic en casilla(x,y)
+    UI -> Controller: procesarClic(x,y)
+    
+    alt Es mina
+        Controller -> UI: mostrarGameOver()
+        Controller -> StatsManager: registrarDerrota()
+        StatsManager -> DB: actualizarEstadísticas()
+        DB --> StatsManager: confirmación
+        break
+    else No es mina
+        Controller -> Calculator: revelarCasilla(x,y)
+        Calculator --> Controller: casillasReveladas
+        Controller -> UI: actualizarTablero(casillasReveladas)
+        
+        alt Victoria detectada
+            Controller -> UI: mostrarVictoria()
+            Controller -> StatsManager: registrarVictoria(tiempo)
+            StatsManager -> DB: actualizarEstadísticas(tiempo)
+            DB --> StatsManager: confirmación
+            break
+        end
+    end
+end
+
+
+Usuario -> UI: Solicitar estadísticas
+UI -> Controller: obtenerEstadísticas()
+Controller -> StatsManager: generarReporteEstadísticas()
+StatsManager -> DB: consultarDatosJuego()
+DB --> StatsManager: datosHistóricos
+StatsManager --> Controller: reporteEstadísticas
+Controller --> UI: mostrarEstadísticas(reporte)
+UI --> Usuario: Muestra pantalla de estadísticas
+
+@enduml

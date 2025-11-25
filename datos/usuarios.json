@@ -42,5 +42,16 @@
     "mejor_tiempo_facil": null,
     "mejor_tiempo_medio": null,
     "mejor_tiempo_dificil": null
+  },
+  "5": {
+    "id": 5,
+    "nombre_usuario": "sara",
+    "correo": "sar@email.com",
+    "fecha_creacion": "2025-11-25T10:48:27.250147",
+    "partidas_totales": 0,
+    "partidas_ganadas": 0,
+    "mejor_tiempo_facil": null,
+    "mejor_tiempo_medio": null,
+    "mejor_tiempo_dificil": null
   }
 }
