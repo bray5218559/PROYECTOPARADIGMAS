@@ -1,12 +1,13 @@
 # controladores/game_controller.py
 import time
 from datetime import datetime
-from modelos.game_logic import MinesweeperGame
-from modelos.database import GameDAO
-from modelos.entities import Game as GameEntity
 from typing import Optional
+from modelos.logica_juego import MinesweeperGame
+from modelos.database import GameDAO
+from modelos.entidades import Game as GameEntity
+from modelos.abstract_classes import AbstractController
 
-class GameController:
+class GameController(AbstractController):
     def __init__(self, game_dao: GameDAO):
         self.game_dao = game_dao
         self.current_game: Optional[MinesweeperGame] = None
@@ -34,7 +35,7 @@ class GameController:
         )
         
         # Guardar en base de datos
-        self.current_game_id = self.game_dao.save_game(game_entity)
+        self.current_game_id = self.game_dao.save(game_entity)
         self.game_start_time = time.time()
         
         return self.current_game
@@ -67,28 +68,19 @@ class GameController:
             duration = int(time.time() - self.game_start_time)
             self.game_dao.update_game_result(self.current_game_id, game_won, duration)
 
-    def get_game_state(self) -> dict:
+    def get_state(self) -> dict:
         """Obtiene el estado actual del juego para la vista"""
         if not self.current_game:
             return {}
         
-        return {
-            'board': self.current_game.board,
-            'revealed': self.current_game.revealed,
-            'flagged': self.current_game.flagged,
-            'game_over': self.current_game.game_over,
-            'game_won': self.current_game.game_won,
-            'rows': self.current_game.rows,
-            'cols': self.current_game.cols,
-            'mines': self.current_game.mines
-        }
+        return self.current_game.get_state()
 
     def get_remaining_mines(self) -> int:
         """Calcula minas restantes basado en banderas"""
         if not self.current_game:
             return 0
         
-        flagged_count = sum(sum(1 for flagged in row) for row in self.current_game.flagged)
+        flagged_count = sum(sum(1 for cell in row if cell) for row in self.current_game.flagged)
         return self.current_game.mines - flagged_count
 
     def get_difficulty(self) -> str:

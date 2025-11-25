@@ -2,7 +2,8 @@
 import sqlite3
 import json
 from typing import List, Optional
-from modelos.entities import User, Game
+from modelos.entidades import User, Game
+from modelos.abstract_classes import AbstractDAO
 
 class DatabaseManager:
     def __init__(self, db_path: str = "minesweeper.db"):
@@ -56,11 +57,11 @@ class DatabaseManager:
         """Obtiene una conexión a la base de datos"""
         return sqlite3.connect(self.db_path)
 
-class UserDAO:
+class UserDAO(AbstractDAO):
     def __init__(self, db_manager: DatabaseManager):
         self.db_manager = db_manager
 
-    def create_user(self, username: str, email: Optional[str] = None) -> User:
+    def save(self, user: User) -> int:
         """Crea un nuevo usuario"""
         with self.db_manager.get_connection() as conn:
             cursor = conn.cursor()
@@ -70,12 +71,11 @@ class UserDAO:
             cursor.execute('''
                 INSERT INTO users (username, email, created_at)
                 VALUES (?, ?, ?)
-            ''', (username, email, created_at))
+            ''', (user.username, user.email, created_at))
             
-            user_id = cursor.lastrowid
-            return User(user_id, username, email, created_at)
+            return cursor.lastrowid
 
-    def get_user(self, user_id: int) -> Optional[User]:
+    def get_by_id(self, user_id: int) -> Optional[User]:
         """Obtiene un usuario por ID"""
         with self.db_manager.get_connection() as conn:
             cursor = conn.cursor()
@@ -111,6 +111,7 @@ class UserDAO:
                 if game_won:
                     games_won += 1
                 
+                # Actualizar mejor tiempo si corresponde
                 best_time_field = f"best_time_{difficulty.lower()}"
                 current_best = locals()[f"best_{difficulty.lower()}"]
                 
@@ -156,11 +157,11 @@ class UserDAO:
             best_time_hard=row[8]
         )
 
-class GameDAO:
+class GameDAO(AbstractDAO):
     def __init__(self, db_manager: DatabaseManager):
         self.db_manager = db_manager
 
-    def save_game(self, game: Game) -> int:
+    def save(self, game: Game) -> int:
         """Guarda una partida y retorna su ID"""
         with self.db_manager.get_connection() as conn:
             cursor = conn.cursor()
@@ -169,9 +170,8 @@ class GameDAO:
                 INSERT INTO games (
                     user_id, difficulty, rows, cols, mines, 
                     board_state, revealed_state, flagged_state,
-                    start_time, end_time, duration_seconds,
-                    game_won, game_over
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    start_time
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ''', (
                 game.user_id,
                 game.difficulty,
@@ -181,16 +181,12 @@ class GameDAO:
                 json.dumps(game.board_state),
                 json.dumps(game.revealed_state),
                 json.dumps(game.flagged_state),
-                game.start_time,
-                game.end_time,
-                game.duration_seconds,
-                game.game_won,
-                game.game_over
+                game.start_time
             ))
             
             return cursor.lastrowid
 
-    def load_game(self, game_id: int) -> Optional[Game]:
+    def get_by_id(self, game_id: int) -> Optional[Game]:
         """Carga una partida por ID"""
         with self.db_manager.get_connection() as conn:
             cursor = conn.cursor()
@@ -200,19 +196,6 @@ class GameDAO:
             if row:
                 return self._row_to_game(row)
             return None
-
-    def get_user_games(self, user_id: int, limit: int = 10) -> List[Game]:
-        """Obtiene las últimas partidas de un usuario"""
-        with self.db_manager.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute('''
-                SELECT * FROM games 
-                WHERE user_id = ? 
-                ORDER BY start_time DESC 
-                LIMIT ?
-            ''', (user_id, limit))
-            
-            return [self._row_to_game(row) for row in cursor.fetchall()]
 
     def update_game_result(self, game_id: int, game_won: bool, duration: int):
         """Actualiza el resultado final de una partida"""
