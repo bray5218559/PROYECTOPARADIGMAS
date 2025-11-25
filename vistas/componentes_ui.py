@@ -1,73 +1,73 @@
-# vistas/ui_components.py
+# vistas/componentes_ui.py
 import flet as ft
 from typing import Callable, Optional, Dict, Any
 
-class BaseDialog:
+class DialogoBase:
     """Clase base para diálogos"""
     def __init__(self):
-        self.dialog = None
+        self.dialogo = None
     
-    def show(self, page: ft.Page):
-        if self.dialog:
-            page.dialog = self.dialog
-            self.dialog.open = True
-            page.update()
+    def mostrar(self, pagina: ft.Page):
+        if self.dialogo:
+            pagina.dialog = self.dialogo
+            self.dialogo.open = True
+            pagina.update()
     
-    def close(self, page: ft.Page):
-        if self.dialog:
-            self.dialog.open = False
-            page.update()
+    def cerrar(self, pagina: ft.Page):
+        if self.dialogo:
+            self.dialogo.open = False
+            pagina.update()
 
-class UserDialog(BaseDialog):
-    def __init__(self, on_login: Callable, on_register: Callable, on_close: Callable):
+class DialogoUsuario(DialogoBase):
+    def __init__(self, al_iniciar_sesion: Callable, al_registrar: Callable, al_cerrar: Callable):
         super().__init__()
-        self.username_field = ft.TextField(label="Nombre de usuario", width=300)
-        self.email_field = ft.TextField(label="Email (opcional)", width=300)
-        self.message_text = ft.Text("", color="red", size=12)
+        self.campo_usuario = ft.TextField(label="Nombre de usuario", width=300)
+        self.campo_correo = ft.TextField(label="Email (opcional)", width=300)
+        self.texto_mensaje = ft.Text("", color="red", size=12)
         
-        self.dialog = ft.AlertDialog(
+        self.dialogo = ft.AlertDialog(
             title=ft.Text("Iniciar Sesión / Registrarse"),
             content=ft.Column([
-                self.username_field,
-                self.email_field,
-                self.message_text
+                self.campo_usuario,
+                self.campo_correo,
+                self.texto_mensaje
             ], tight=True),
             actions=[
-                ft.TextButton("Iniciar Sesión", on_click=on_login),
-                ft.TextButton("Registrarse", on_click=on_register),
-                ft.TextButton("Cerrar", on_click=on_close)
+                ft.TextButton("Iniciar Sesión", on_click=al_iniciar_sesion),
+                ft.TextButton("Registrarse", on_click=al_registrar),
+                ft.TextButton("Cerrar", on_click=al_cerrar)
             ],
             actions_alignment="end"
         )
     
-    def get_username(self) -> str:
-        return self.username_field.value or ""
+    def obtener_usuario(self) -> str:
+        return self.campo_usuario.value or ""
     
-    def get_email(self) -> str:
-        return self.email_field.value or ""
+    def obtener_correo(self) -> str:
+        return self.campo_correo.value or ""
     
-    def set_message(self, message: str, is_error: bool = True):
-        self.message_text.value = message
-        self.message_text.color = "red" if is_error else "green"
+    def establecer_mensaje(self, mensaje: str, es_error: bool = True):
+        self.texto_mensaje.value = mensaje
+        self.texto_mensaje.color = "red" if es_error else "green"
 
-class StatsDialog(BaseDialog):
-    def __init__(self, user_data: Dict[str, Any], on_close: Callable):
+class DialogoEstadisticas(DialogoBase):
+    def __init__(self, datos_usuario: Dict[str, Any], al_cerrar: Callable):
         super().__init__()
         
         # Calcular partidas perdidas
-        total_games = user_data.get('total_games', 0)
-        games_won = user_data.get('games_won', 0)
-        games_lost = total_games - games_won
+        partidas_totales = datos_usuario.get('partidas_totales', 0)
+        partidas_ganadas = datos_usuario.get('partidas_ganadas', 0)
+        partidas_perdidas = partidas_totales - partidas_ganadas
         
         # Crear contenido de estadísticas
-        content = []
-        if user_data and user_data.get('username'):
+        contenido = []
+        if datos_usuario and datos_usuario.get('nombre_usuario'):
             # Encabezado con nombre de usuario
-            content.append(
+            contenido.append(
                 ft.Container(
                     content=ft.Row([
                         ft.Icon(name="person", color="blue", size=24),
-                        ft.Text(f"{user_data['username']}", size=20, weight="bold")
+                        ft.Text(f"{datos_usuario['nombre_usuario']}", size=20, weight="bold")
                     ]),
                     padding=5,
                     margin=5
@@ -75,7 +75,7 @@ class StatsDialog(BaseDialog):
             )
             
             # Estadísticas principales
-            content.extend([
+            contenido.extend([
                 ft.Divider(),
                 ft.Text("ESTADÍSTICAS GENERALES", size=16, weight="bold", color="blue"),
                 
@@ -84,15 +84,15 @@ class StatsDialog(BaseDialog):
                     content=ft.Column([
                         ft.Row([
                             ft.Icon(name="sports_esports", color="blue"),
-                            ft.Text(f"Partidas totales: {total_games}", size=14, weight="bold")
+                            ft.Text(f"Partidas totales: {partidas_totales}", size=14, weight="bold")
                         ]),
                         ft.Row([
                             ft.Icon(name="emoji_events", color="green"),
-                            ft.Text(f"Partidas ganadas: {games_won}", size=14, weight="bold", color="green")
+                            ft.Text(f"Partidas ganadas: {partidas_ganadas}", size=14, weight="bold", color="green")
                         ]),
                         ft.Row([
                             ft.Icon(name="mood_bad", color="red"),
-                            ft.Text(f"Partidas perdidas: {games_lost}", size=14, weight="bold", color="red")
+                            ft.Text(f"Partidas perdidas: {partidas_perdidas}", size=14, weight="bold", color="red")
                         ])
                     ], spacing=5),
                     padding=10,
@@ -105,9 +105,9 @@ class StatsDialog(BaseDialog):
                 ft.Container(
                     content=ft.Column([
                         ft.Text("EFECTIVIDAD", size=14, weight="bold"),
-                        ft.Text(f"{user_data.get('win_percentage', 0):.1f}% de victorias", 
+                        ft.Text(f"{datos_usuario.get('porcentaje_victorias', 0):.1f}% de victorias", 
                                size=16, weight="bold", 
-                               color="green" if user_data.get('win_percentage', 0) > 50 else "orange")
+                               color="green" if datos_usuario.get('porcentaje_victorias', 0) > 50 else "orange")
                     ], horizontal_alignment="center"),
                     padding=10,
                     bgcolor="blue50",
@@ -121,9 +121,9 @@ class StatsDialog(BaseDialog):
                 # Mejores tiempos por dificultad
                 ft.Container(
                     content=ft.Column([
-                        self._create_time_row("Fácil", user_data.get('best_time_easy'), "🟢"),
-                        self._create_time_row("Medio", user_data.get('best_time_medium'), "🟡"),
-                        self._create_time_row("Difícil", user_data.get('best_time_hard'), "🔴")
+                        self._crear_fila_tiempo("Fácil", datos_usuario.get('mejor_tiempo_facil'), "🟢"),
+                        self._crear_fila_tiempo("Medio", datos_usuario.get('mejor_tiempo_medio'), "🟡"),
+                        self._crear_fila_tiempo("Difícil", datos_usuario.get('mejor_tiempo_dificil'), "🔴")
                     ]),
                     padding=10,
                     bgcolor="grey50",
@@ -132,61 +132,63 @@ class StatsDialog(BaseDialog):
                 )
             ])
         else:
-            content = [
+            contenido = [
                 ft.Text("No hay datos de estadísticas disponibles", size=14),
                 ft.Text("Juega algunas partidas para ver tus estadísticas", size=12, color="grey")
             ]
         
-        self.dialog = ft.AlertDialog(
+        self.dialogo = ft.AlertDialog(
             title=ft.Row([
                 ft.Icon(name="leaderboard", color="blue"),
                 ft.Text("Estadísticas del Jugador")
             ]),
-            content=ft.Column(content, scroll="adaptive"),
-            actions=[ft.TextButton("Cerrar", on_click=on_close)],
+            content=ft.Column(contenido, scroll="adaptive"),
+            actions=[ft.TextButton("Cerrar", on_click=al_cerrar)],
         )
     
-    def _create_time_row(self, difficulty: str, time_value: Any, emoji: str):
+    def _crear_fila_tiempo(self, dificultad: str, valor_tiempo: Any, emoji: str):
         """Crea una fila para mostrar el mejor tiempo de una dificultad"""
-        time_text = f"{time_value} segundos" if time_value is not None else "No registrado"
-        color = "green" if time_value is not None else "gray"
+        texto_tiempo = f"{valor_tiempo} segundos" if valor_tiempo is not None else "No registrado"
+        color = "green" if valor_tiempo is not None else "gray"
         
         return ft.Row([
             ft.Text(emoji, size=16),
-            ft.Text(f"{difficulty}:", size=14, weight="bold", width=80),
-            ft.Text(time_text, size=14, color=color)
+            ft.Text(f"{dificultad}:", size=14, weight="bold", width=80),
+            ft.Text(texto_tiempo, size=14, color=color)
         ])
 
-class UIComponents:
+class FabricaComponentesUI:
+    """Fábrica para crear componentes de UI reutilizables"""
+    
     @staticmethod
-    def create_title():
+    def crear_titulo():
         return ft.Text("BUSCAMINAS", size=32, weight="bold", color="blue900")
 
     @staticmethod
-    def create_difficulty_text():
+    def crear_texto_dificultad():
         return ft.Text("Dificultad: Fácil", size=16, weight="bold")
 
     @staticmethod
-    def create_mines_counter():
+    def crear_contador_minas():
         return ft.Text("Minas: 0", size=16, weight="bold")
 
     @staticmethod
-    def create_status_message():
+    def crear_mensaje_estado():
         return ft.Text("¡Bienvenido! Selecciona una dificultad para comenzar.", 
                       size=16, weight="bold", color="blue")
 
     @staticmethod
-    def create_game_grid(rows: int, cols: int, on_cell_click: Callable, on_cell_long_press: Callable):
+    def crear_grid_juego(filas: int, columnas: int, al_click_celda: Callable, al_presion_larga_celda: Callable):
         return ft.GridView(
             expand=1,
-            runs_count=cols,
+            runs_count=columnas,
             max_extent=35,
             spacing=2,
             run_spacing=2,
         )
 
     @staticmethod
-    def create_cell_button(row: int, col: int, on_click: Callable, on_long_press: Callable):
+    def crear_boton_celda(fila: int, columna: int, al_click: Callable, al_presion_larga: Callable):
         return ft.Container(
             content=ft.Text("", size=12, weight="bold"),
             width=35,
@@ -194,29 +196,29 @@ class UIComponents:
             alignment=ft.alignment.center,
             bgcolor="grey300",
             border_radius=3,
-            on_click=lambda e: on_click(row, col),
-            on_long_press=lambda e: on_long_press(row, col),
+            on_click=lambda e: al_click(fila, columna),
+            on_long_press=lambda e: al_presion_larga(fila, columna),
         )
 
     @staticmethod
-    def create_difficulty_buttons(on_easy: Callable, on_medium: Callable, on_hard: Callable):
+    def crear_botones_dificultad(al_facil: Callable, al_medio: Callable, al_dificil: Callable):
         return ft.Row(
             controls=[
                 ft.ElevatedButton(
                     "Fácil (8x8 - 10 minas)", 
-                    on_click=on_easy, 
+                    on_click=al_facil, 
                     bgcolor="green400", 
                     color="white"
                 ),
                 ft.ElevatedButton(
                     "Medio (12x12 - 30 minas)", 
-                    on_click=on_medium, 
+                    on_click=al_medio, 
                     bgcolor="orange400", 
                     color="white"
                 ),
                 ft.ElevatedButton(
                     "Difícil (16x16 - 60 minas)", 
-                    on_click=on_hard, 
+                    on_click=al_dificil, 
                     bgcolor="red400", 
                     color="white"
                 ),
@@ -226,34 +228,34 @@ class UIComponents:
         )
 
     @staticmethod
-    def create_action_buttons(on_user: Callable, on_stats: Callable, on_new_game: Callable, on_exit: Callable):
+    def crear_botones_accion(al_usuario: Callable, al_estadisticas: Callable, al_nuevo_juego: Callable, al_salir: Callable):
         return ft.Row(
             controls=[
                 ft.ElevatedButton(
                     "Usuario", 
                     icon="person", 
-                    on_click=on_user,
+                    on_click=al_usuario,
                     bgcolor="blue400", 
                     color="white"
                 ),
                 ft.ElevatedButton(
                     "Estadísticas", 
                     icon="leaderboard", 
-                    on_click=on_stats,
+                    on_click=al_estadisticas,
                     bgcolor="green400", 
                     color="white"
                 ),
                 ft.ElevatedButton(
                     "Nuevo Juego", 
                     icon="replay", 
-                    on_click=on_new_game,
+                    on_click=al_nuevo_juego,
                     bgcolor="blue400", 
                     color="white"
                 ),
                 ft.ElevatedButton(
                     "Salir", 
                     icon="exit_to_app", 
-                    on_click=on_exit,
+                    on_click=al_salir,
                     bgcolor="red400", 
                     color="white"
                 ),
@@ -263,7 +265,7 @@ class UIComponents:
         )
 
     @staticmethod
-    def create_instructions():
+    def crear_instrucciones():
         return ft.Container(
             content=ft.Column([
                 ft.Text("Instrucciones:", weight="bold"),
@@ -275,4 +277,20 @@ class UIComponents:
             bgcolor="grey100",
             border_radius=10,
             margin=10,
+        )
+
+    @staticmethod
+    def crear_tarjeta_estadistica(titulo: str, valor: Any, icono: str, color: str = "blue"):
+        """Crea una tarjeta de estadística individual"""
+        return ft.Card(
+            content=ft.Container(
+                content=ft.Column([
+                    ft.Icon(icono, color=color, size=30),
+                    ft.Text(str(valor), size=20, weight="bold"),
+                    ft.Text(titulo, size=12, color="gray")
+                ], horizontal_alignment="center", spacing=5),
+                padding=15,
+                width=120
+            ),
+            elevation=3
         )
