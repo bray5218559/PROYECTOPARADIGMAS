@@ -1,0 +1,13 @@
+{
+  "1": {
+    "id": 1,
+    "nombre_usuario": "liliana",
+    "correo": "lili@email.com",
+    "fecha_creacion": "2025-11-25T00:16:59.398210",
+    "partidas_totales": 0,
+    "partidas_ganadas": 0,
+    "mejor_tiempo_facil": null,
+    "mejor_tiempo_medio": null,
+    "mejor_tiempo_dificil": null
+  }
+}

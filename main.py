@@ -1,4 +1,4 @@
-# main.py (versión actualizada)
+# main.py
 import flet as ft
 import time
 from modelos.basedatos_json import BaseDatosJSON, UsuarioDAO, PartidaDAO
@@ -28,6 +28,7 @@ class AplicacionBuscaminas:
         self.pagina_actual = "inicio_sesion"
         self.pestanas = None
         self.contenido_principal = None
+        self.pagina = None
 
     def construir(self, pagina: ft.Page):
         self.pagina = pagina
@@ -82,6 +83,9 @@ class AplicacionBuscaminas:
             nombre_usuario = self.controlador_usuario.obtener_estado().get('nombre_usuario', 'Invitado')
             estado_juego = self.controlador_juego.obtener_estado()
             
+            # Actualizar dificultad en la vista
+            self.vista_juego.actualizar_dificultad(self.controlador_juego.obtener_dificultad())
+            
             return self.vista_juego.crear_vista_tablero_juego(
                 estado_juego=estado_juego,
                 nombre_usuario=nombre_usuario,
@@ -103,9 +107,172 @@ class AplicacionBuscaminas:
             al_inicio_sesion=lambda e: self.mostrar_pagina_inicio_sesion()
         )
 
-    # ... (el resto de métodos del main se mantienen igual, pero usando las vistas)
-    # Los métodos como mostrar_pagina_inicio_sesion, manejar_inicio_sesion, etc.
-    # se actualizan para usar las nuevas vistas
+    def mostrar_pagina_inicio_sesion(self, e=None):
+        """Muestra la página de inicio de sesión/registro"""
+        self.pagina_actual = "inicio_sesion"
+        
+        vista_inicio_sesion = self.vista_inicio_sesion.crear_vista_inicio_sesion(
+            al_iniciar_sesion=self.manejar_inicio_sesion,
+            al_registrar=self.manejar_registro
+        )
+        
+        self.pagina.clean()
+        self.pagina.add(vista_inicio_sesion)
+
+    def mostrar_seleccion_dificultad(self, e=None):
+        """Muestra la selección de dificultad"""
+        self.pagina_actual = "dificultad"
+        
+        # Crear interfaz principal si no existe
+        if not self.contenido_principal:
+            self.crear_interfaz_principal()
+        
+        # Resetear el juego
+        self.controlador_juego._juego_actual = None
+        self.vista_juego.actualizar_mensaje_estado("Selecciona una dificultad para comenzar", "blue")
+        
+        self.pagina.clean()
+        self.pagina.add(self.contenido_principal)
+        self.pestanas.selected_index = 0
+        self.actualizar_contenido_juego()
+
+    def mostrar_pestana_estadisticas(self, e=None):
+        """Muestra la pestaña de estadísticas"""
+        if not self.contenido_principal:
+            self.crear_interfaz_principal()
+        
+        self.pestanas.selected_index = 1
+        self.actualizar_pestana_estadisticas()
+        self.pagina.update()
+
+    def cambio_pestana(self, e):
+        """Maneja el cambio de pestañas"""
+        if self.pestanas.selected_index == 0:  # Pestaña de Juego
+            self.actualizar_contenido_juego()
+        elif self.pestanas.selected_index == 1:  # Pestaña de Estadísticas
+            self.actualizar_pestana_estadisticas()
+
+    def actualizar_contenido_juego(self):
+        """Actualiza el contenido de la pestaña de juego"""
+        contenido_juego = self.crear_contenido_juego()
+        pestana_juego = self.pestanas.tabs[0]
+        pestana_juego.content = contenido_juego
+        self.pagina.update()
+
+    def actualizar_pestana_estadisticas(self):
+        """Actualiza el contenido de la pestaña de estadísticas"""
+        contenido_estadisticas = self.crear_contenido_estadisticas()
+        pestana_estadisticas = self.pestanas.tabs[1]
+        pestana_estadisticas.content = contenido_estadisticas
+        self.pagina.update()
+
+    def manejar_inicio_sesion(self, e):
+        """Maneja el intento de inicio de sesión"""
+        usuario, _ = self.vista_inicio_sesion.obtener_datos_formulario()
+        
+        if not usuario:
+            self.vista_inicio_sesion.mostrar_mensaje("El nombre de usuario es requerido", False)
+            self.pagina.update()
+            return
+        
+        exito, mensaje = self.controlador_usuario.iniciar_sesion(usuario)
+        
+        self.vista_inicio_sesion.mostrar_mensaje(mensaje, exito)
+        
+        if exito:
+            # Limpiar formulario y mostrar selección de dificultad
+            self.vista_inicio_sesion.limpiar_formulario()
+            self.mostrar_seleccion_dificultad()
+        
+        self.pagina.update()
+
+    def manejar_registro(self, e):
+        """Maneja el intento de registro"""
+        usuario, correo = self.vista_inicio_sesion.obtener_datos_formulario()
+        
+        if not usuario:
+            self.vista_inicio_sesion.mostrar_mensaje("El nombre de usuario es requerido", False)
+            self.pagina.update()
+            return
+        
+        exito, mensaje = self.controlador_usuario.registrar(usuario, correo if correo else None)
+        
+        self.vista_inicio_sesion.mostrar_mensaje(mensaje, exito)
+        
+        if exito:
+            # Limpiar formulario y mostrar selección de dificultad
+            self.vista_inicio_sesion.limpiar_formulario()
+            self.mostrar_seleccion_dificultad()
+        
+        self.pagina.update()
+
+    def iniciar_juego(self, dificultad: str, filas: int, columnas: int, minas: int):
+        """Inicia un nuevo juego con la dificultad especificada"""
+        try:
+            id_usuario = self.controlador_usuario.usuario_actual.id if self.controlador_usuario.usuario_actual else None
+            self.controlador_juego.iniciar_nueva_partida(filas, columnas, minas, dificultad, id_usuario)
+            
+            # Actualizar mensaje de estado
+            self.vista_juego.actualizar_mensaje_estado("¡Juego comenzado! Haz click en una celda para empezar.", "blue")
+            self.vista_juego.actualizar_dificultad(dificultad)
+            
+            self.actualizar_contenido_juego()
+        except Exception as e:
+            self.vista_juego.actualizar_mensaje_estado(f"Error al iniciar juego: {str(e)}", "red")
+            self.pagina.update()
+
+    def manejar_click_celda(self, fila: int, columna: int):
+        """Maneja el click en una celda"""
+        try:
+            exito, juego_terminado = self.controlador_juego.revelar_celda(fila, columna)
+            
+            if juego_terminado:
+                if self.controlador_juego.juego_actual.partida_ganada:
+                    self.vista_juego.actualizar_mensaje_estado("¡Felicidades! Has ganado el juego.", "green")
+                    
+                    # Actualizar estadísticas del usuario
+                    if self.controlador_usuario.usuario_actual and self.controlador_juego.tiempo_inicio_juego:
+                        duracion = int(time.time() - self.controlador_juego.tiempo_inicio_juego)
+                        self.controlador_usuario.actualizar_estadisticas_usuario(
+                            True, duracion, self.controlador_juego.obtener_dificultad()
+                        )
+                else:
+                    self.vista_juego.actualizar_mensaje_estado("¡Game Over! Has pisado una mina.", "red")
+                    
+                    # Actualizar estadísticas del usuario
+                    if self.controlador_usuario.usuario_actual and self.controlador_juego.tiempo_inicio_juego:
+                        duracion = int(time.time() - self.controlador_juego.tiempo_inicio_juego)
+                        self.controlador_usuario.actualizar_estadisticas_usuario(
+                            False, duracion, self.controlador_juego.obtener_dificultad()
+                        )
+            
+            # Actualizar contador de minas y grid
+            if self.controlador_juego.juego_actual:
+                minas_restantes = self.controlador_juego.obtener_minas_restantes()
+                self.vista_juego.actualizar_contador_minas(minas_restantes)
+            
+            self.actualizar_contenido_juego()
+            
+        except Exception as e:
+            self.vista_juego.actualizar_mensaje_estado(f"Error: {str(e)}", "red")
+            self.pagina.update()
+
+    def manejar_presion_larga_celda(self, fila: int, columna: int):
+        """Maneja el click largo (bandera) en una celda"""
+        try:
+            self.controlador_juego.alternar_bandera(fila, columna)
+            if self.controlador_juego.juego_actual:
+                minas_restantes = self.controlador_juego.obtener_minas_restantes()
+                self.vista_juego.actualizar_contador_minas(minas_restantes)
+            self.actualizar_contenido_juego()
+        except Exception as e:
+            self.vista_juego.actualizar_mensaje_estado(f"Error: {str(e)}", "red")
+            self.pagina.update()
+
+    def salir_aplicacion(self, e):
+        """Cierra la aplicación"""
+        self.vista_juego.actualizar_mensaje_estado("Para salir, cierre la ventana del navegador", "orange")
+        self.pagina.update()
 
 def main(pagina: ft.Page):
     aplicacion = AplicacionBuscaminas()
