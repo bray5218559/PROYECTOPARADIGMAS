@@ -1,134 +1,140 @@
-# vistas/vista_estadisticas.py
 import flet as ft
 from typing import Dict, Any, Callable
-from vistas.componentes_ui import FabricaComponentesUI
 
 class VistaEstadisticas:
-    """Vista responsable de mostrar las estadísticas del juego"""
-    
     def __init__(self):
-        self.fabrica = FabricaComponentesUI()
-
-    def crear_vista_estadisticas(self, 
-                               estadisticas: Dict[str, Any],
-                               al_actualizar: Callable,
-                               al_inicio_sesion: Callable) -> ft.Column:
+        pass
+    
+    def crear_vista_estadisticas(self, estadisticas: Dict[str, Any], al_actualizar: Callable, al_inicio_sesion: Callable):
         """Crea la vista de estadísticas"""
+        usuario = estadisticas.get('nombre_usuario', 'Invitado')
         
-        if not estadisticas or not estadisticas.get('nombre_usuario'):
-            return self._crear_vista_sin_estadisticas(al_inicio_sesion)
-        else:
-            return self._crear_vista_con_estadisticas(estadisticas, al_actualizar)
-
-    def _crear_vista_sin_estadisticas(self, al_inicio_sesion: Callable) -> ft.Column:
-        """Crea vista cuando no hay estadísticas disponibles"""
+        return ft.Container(
+            content=ft.Column([
+                # Encabezado
+                ft.Text("Buscaminas", size=24, weight="bold"),
+                ft.Row([
+                    ft.TextButton("Juego", on_click=lambda e: al_actualizar(e)),
+                    ft.TextButton("Estadísticas", on_click=lambda e: None),
+                ]),
+                ft.Divider(),
+                
+                # Título de estadísticas
+                ft.Text(f"Estadísticas de {usuario}", size=20, weight="bold"),
+                ft.Container(height=20),
+                
+                # Resumen General
+                ft.Text("Resumen General", size=18, weight="bold"),
+                ft.Container(height=10),
+                
+                # Estadísticas en tarjetas
+                self._crear_tarjetas_estadisticas(estadisticas),
+                ft.Container(height=20),
+                
+                # Porcentaje de victoria
+                ft.Container(
+                    content=ft.Column([
+                        ft.Text(f"{estadisticas.get('porcentaje_victorias', 0)}%", 
+                               size=24, weight="bold", color="green"),
+                        ft.Text("Porcentaje de Victoria", size=14),
+                    ], horizontal_alignment="center"),
+                    padding=20,
+                    border=ft.border.all(1, "grey"),
+                    border_radius=8
+                ),
+                
+                ft.Container(height=30),
+                ft.Divider(),
+                ft.Container(height=20),
+                
+                # Mejores Tiempos
+                ft.Text("Mejores Tiempos", size=18, weight="bold"),
+                ft.Container(height=10),
+                
+                self._crear_tabla_mejores_tiempos(estadisticas),
+                
+                ft.Container(height=30),
+                
+                # Botones de acción
+                ft.Row([
+                    ft.ElevatedButton("Cambiar Usuario", on_click=al_inicio_sesion),
+                    ft.ElevatedButton("Volver al Juego", on_click=al_actualizar),
+                ], alignment="center", spacing=20)
+                
+            ], scroll="adaptive"),
+            padding=20
+        )
+    
+    def _crear_tarjetas_estadisticas(self, estadisticas: Dict[str, Any]):
+        """Crea las tarjetas con las estadísticas principales"""
+        partidas_totales = estadisticas.get('partidas_totales', 0)
+        partidas_ganadas = estadisticas.get('partidas_ganadas', 0)
+        partidas_perdidas = estadisticas.get('partidas_perdidas', 0)
+        
+        return ft.Row([
+            # Partidas Totales
+            ft.Container(
+                content=ft.Column([
+                    ft.Text(str(partidas_totales), size=24, weight="bold", color="blue"),
+                    ft.Text("Partidas Totales", size=14),
+                ], horizontal_alignment="center"),
+                padding=20,
+                border=ft.border.all(1, "grey"),
+                border_radius=8,
+                expand=True
+            ),
+            
+            ft.Container(width=10),
+            
+            # Partidas Ganadas
+            ft.Container(
+                content=ft.Column([
+                    ft.Text(str(partidas_ganadas), size=24, weight="bold", color="green"),
+                    ft.Text("Partidas Ganadas", size=14),
+                ], horizontal_alignment="center"),
+                padding=20,
+                border=ft.border.all(1, "grey"),
+                border_radius=8,
+                expand=True
+            ),
+            
+            ft.Container(width=10),
+            
+            # Partidas Perdidas
+            ft.Container(
+                content=ft.Column([
+                    ft.Text(str(partidas_perdidas), size=24, weight="bold", color="red"),
+                    ft.Text("Partidas Perdidas", size=14),
+                ], horizontal_alignment="center"),
+                padding=20,
+                border=ft.border.all(1, "grey"),
+                border_radius=8,
+                expand=True
+            ),
+        ])
+    
+    def _crear_tabla_mejores_tiempos(self, estadisticas: Dict[str, Any]):
+        """Crea la tabla de mejores tiempos por dificultad"""
+        mejores_tiempos = estadisticas.get('mejores_tiempos', {})
+        
         return ft.Column([
-            ft.Icon(ft.Icons.WARNING, size=48, color="orange"),
-            ft.Text("Debes iniciar sesión", size=18, weight="bold"),
-            ft.Text("Inicia sesión para ver tus estadísticas", size=14, color="gray"),
-            ft.ElevatedButton(
-                "Ir a Inicio de Sesión",
-                icon=ft.Icons.LOGIN,
-                on_click=al_inicio_sesion,
-                bgcolor="blue400",
-                color="white"
-            )
-        ], alignment="center", horizontal_alignment="center", spacing=15)
-
-    def _crear_vista_con_estadisticas(self, estadisticas: Dict[str, Any], al_actualizar: Callable) -> ft.Column:
-        """Crea vista con estadísticas del usuario"""
-        
-        # Tarjeta de resumen general
-        tarjeta_resumen = self._crear_tarjeta_resumen(estadisticas)
-        
-        # Tarjeta de mejores tiempos
-        tarjeta_tiempos = self._crear_tarjeta_tiempos(estadisticas)
-        
-        return ft.Column([
+            # Fácil
             ft.Row([
-                ft.Icon(ft.Icons.PERSON, color="blue", size=24),
-                ft.Text(f"Estadísticas de {estadisticas['nombre_usuario']}", 
-                       size=22, weight="bold", color="blue")
-            ], alignment="center"),
-            tarjeta_resumen,
-            tarjeta_tiempos,
-            ft.ElevatedButton(
-                "Actualizar Estadísticas",
-                icon=ft.Icons.REFRESH,
-                on_click=al_actualizar,
-                bgcolor="blue400",
-                color="white"
-            )
-        ], spacing=20)
-
-    def _crear_tarjeta_resumen(self, estadisticas: Dict[str, Any]) -> ft.Card:
-        """Crea la tarjeta de resumen general"""
-        return ft.Card(
-            content=ft.Container(
-                content=ft.Column([
-                    ft.Text("Resumen General", size=20, weight="bold", color="blue"),
-                    ft.Divider(),
-                    ft.Row([
-                        self._crear_elemento_estadistica("Partidas Totales", 
-                                                       estadisticas['partidas_totales'], 
-                                                       ft.Icons.SPORTS_ESPORTS),
-                        self._crear_elemento_estadistica("Partidas Ganadas", 
-                                                       estadisticas['partidas_ganadas'], 
-                                                       ft.Icons.EMOJI_EVENTS),
-                        self._crear_elemento_estadistica("Partidas Perdidas", 
-                                                       estadisticas['partidas_perdidas'], 
-                                                       ft.Icons.MOOD_BAD),
-                    ], alignment="space_around"),
-                    ft.Container(
-                        content=ft.Row([
-                            self._crear_elemento_estadistica("Porcentaje de Victoria", 
-                                                           f"{estadisticas['porcentaje_victorias']}%", 
-                                                           ft.Icons.TRENDING_UP)
-                        ], alignment="center"),
-                        margin=ft.margin.only(top=10)
-                    )
-                ], spacing=15),
-                padding=20
-            ),
-            elevation=5,
-            margin=10
-        )
-
-    def _crear_tarjeta_tiempos(self, estadisticas: Dict[str, Any]) -> ft.Card:
-        """Crea la tarjeta de mejores tiempos"""
-        return ft.Card(
-            content=ft.Container(
-                content=ft.Column([
-                    ft.Text("Mejores Tiempos", size=20, weight="bold", color="green"),
-                    ft.Divider(),
-                    ft.Row([
-                        self._crear_elemento_tiempo("Fácil", estadisticas.get('mejor_tiempo_facil'), "🟢"),
-                        self._crear_elemento_tiempo("Medio", estadisticas.get('mejor_tiempo_medio'), "🟡"),
-                        self._crear_elemento_tiempo("Difícil", estadisticas.get('mejor_tiempo_dificil'), "🔴"),
-                    ], alignment="space_around")
-                ], spacing=15),
-                padding=20
-            ),
-            elevation=5,
-            margin=10
-        )
-
-    def _crear_elemento_estadistica(self, etiqueta: str, valor, icono) -> ft.Column:
-        """Crea un elemento de estadística individual"""
-        return ft.Column([
-            ft.Icon(icono, size=30, color="blue"),
-            ft.Text(str(valor), size=24, weight="bold"),
-            ft.Text(etiqueta, size=12, color="gray", text_align="center")
-        ], horizontal_alignment="center", spacing=5)
-
-    def _crear_elemento_tiempo(self, dificultad: str, valor_tiempo, emoji: str) -> ft.Column:
-        """Crea un elemento de tiempo individual"""
-        tiempo_mostrar = f"{valor_tiempo}s" if valor_tiempo else "No registrado"
-        color = "green" if dificultad == "Fácil" else "orange" if dificultad == "Medio" else "red"
-        
-        return ft.Column([
-            ft.Text(emoji, size=30),
-            ft.Text(dificultad, size=14, weight="bold", color=color),
-            ft.Text(tiempo_mostrar, size=16, weight="bold"),
-            ft.Text("mejor tiempo", size=10, color="gray")
-        ], horizontal_alignment="center", spacing=5)
+                ft.Text("Fácil:", weight="bold", width=80),
+                ft.Text(f"{mejores_tiempos.get('facil', 'N/A')} segundos", width=150),
+            ]),
+            ft.Container(height=5),
+            
+            # Medio
+            ft.Row([
+                ft.Text("Medio:", weight="bold", width=80),
+                ft.Text(f"{mejores_tiempos.get('medio', 'N/A')} segundos", width=150),
+            ]),
+            ft.Container(height=5),
+            
+            # Difícil
+            ft.Row([
+                ft.Text("Difícil:", weight="bold", width=80),
+                ft.Text(f"{mejores_tiempos.get('dificil', 'N/A')} segundos", width=150),
+            ]),
+        ])

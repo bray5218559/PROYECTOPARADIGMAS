@@ -1,9 +1,11 @@
 # controladores/controlador_usuario.py
-from typing import Optional
+from typing import Dict, Any, Optional
 from modelos.basedatos_json import UsuarioDAO
 from modelos.entidades import Usuario
 from modelos.clases_abstractas import ControladorAbstracto
 
+
+    
 class ControladorUsuario(ControladorAbstracto):
     def __init__(self, dao_usuario: UsuarioDAO):
         self._dao_usuario = dao_usuario
@@ -89,3 +91,61 @@ class ControladorUsuario(ControladorAbstracto):
     @property
     def usuario_actual(self) -> Optional[Usuario]:
         return self._usuario_actual
+
+    
+    def obtener_estado(self) -> Dict[str, Any]:
+        """Obtiene el estado actual del usuario con estadísticas"""
+        if not self.usuario_actual:
+            return {
+                'nombre_usuario': 'Invitado',
+                'partidas_totales': 0,
+                'partidas_ganadas': 0,
+                'partidas_perdidas': 0,
+                'porcentaje_victorias': 0,
+                'mejores_tiempos': {}
+            }
+        
+        # Obtener estadísticas del usuario
+        partidas = self.dao_usuario.obtener_partidas_usuario(self.usuario_actual.id)
+        partidas_totales = len(partidas)
+        partidas_ganadas = len([p for p in partidas if p.get('ganada')])
+        partidas_perdidas = partidas_totales - partidas_ganadas
+        
+        porcentaje_victorias = 0
+        if partidas_totales > 0:
+            porcentaje_victorias = round((partidas_ganadas / partidas_totales) * 100, 1)
+        
+        # Calcular mejores tiempos por dificultad
+        mejores_tiempos = self._calcular_mejores_tiempos(partidas)
+        
+        return {
+            'nombre_usuario': self.usuario_actual.nombre,
+            'partidas_totales': partidas_totales,
+            'partidas_ganadas': partidas_ganadas,
+            'partidas_perdidas': partidas_perdidas,
+            'porcentaje_victorias': porcentaje_victorias,
+            'mejores_tiempos': mejores_tiempos
+        }
+    
+    def _calcular_mejores_tiempos(self, partidas):
+        """Calcula los mejores tiempos por dificultad"""
+        tiempos_por_dificultad = {'facil': [], 'medio': [], 'dificil': []}
+        
+        for partida in partidas:
+            if partida.get('ganada') and partida.get('duracion'):
+                dificultad = partida.get('dificultad', '').lower()
+                if 'facil' in dificultad:
+                    tiempos_por_dificultad['facil'].append(partida['duracion'])
+                elif 'medio' in dificultad:
+                    tiempos_por_dificultad['medio'].append(partida['duracion'])
+                elif 'dificil' in dificultad:
+                    tiempos_por_dificultad['dificil'].append(partida['duracion'])
+        
+        mejores_tiempos = {}
+        for dificultad, tiempos in tiempos_por_dificultad.items():
+            if tiempos:
+                mejores_tiempos[dificultad] = min(tiempos)
+            else:
+                mejores_tiempos[dificultad] = "N/A"
+        
+        return mejores_tiempos

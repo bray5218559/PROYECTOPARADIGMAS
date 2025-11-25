@@ -1,6 +1,7 @@
 # modelos/basedatos_json.py
 import json
 import os
+import time
 from typing import List, Optional, Dict, Any, Iterator
 from datetime import datetime
 from modelos.entidades import Usuario, Partida
@@ -215,3 +216,61 @@ class PartidaDAO(DAOAbstracto):
             
             partidas[clave_partida] = datos_partida
             self._base_datos._escribir_partidas(partidas)
+
+class UsuarioDAO:
+    def __init__(self, base_datos):
+        self.base_datos = base_datos
+    
+    def obtener_usuario_por_nombre(self, nombre: str):
+        """Obtiene un usuario por nombre"""
+        usuarios = self.base_datos.obtener_usuarios()
+        for usuario in usuarios:
+            if usuario.get('nombre') == nombre:
+                return usuario
+        return None
+    
+    def obtener_partidas_usuario(self, id_usuario: int):
+        """Obtiene las partidas de un usuario"""
+        partidas = self.base_datos.obtener_partidas()
+        return [p for p in partidas if p.get('id_usuario') == id_usuario]
+    
+    def crear_usuario(self, nombre: str, correo: str = None):
+        """Crea un nuevo usuario"""
+        usuarios = self.base_datos.obtener_usuarios()
+        nuevo_id = max([u.get('id', 0) for u in usuarios], default=0) + 1
+        
+        nuevo_usuario = {
+            'id': nuevo_id,
+            'nombre': nombre,
+            'correo': correo,
+            'fecha_registro': time.time()
+        }
+        
+        usuarios.append(nuevo_usuario)
+        self.base_datos.guardar_usuarios(usuarios)
+        return nuevo_usuario
+
+class PartidaDAO:
+    def __init__(self, base_datos):
+        self.base_datos = base_datos
+    
+    def crear_partida(self, id_usuario: int, dificultad: str, filas: int, columnas: int, minas: int):
+        """Crea una nueva partida"""
+        partidas = self.base_datos.obtener_partidas()
+        nuevo_id = max([p.get('id', 0) for p in partidas], default=0) + 1
+        
+        nueva_partida = {
+            'id': nuevo_id,
+            'id_usuario': id_usuario,
+            'dificultad': dificultad,
+            'filas': filas,
+            'columnas': columnas,
+            'minas': minas,
+            'fecha_inicio': time.time(),
+            'ganada': False,
+            'duracion': 0
+        }
+        
+        partidas.append(nueva_partida)
+        self.base_datos.guardar_partidas(partidas)
+        return nuevo_id

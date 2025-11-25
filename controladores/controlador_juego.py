@@ -1,11 +1,83 @@
 # controladores/controlador_juego.py
 import time
+from typing import Dict, Any, Tuple
 from datetime import datetime
 from typing import Optional
 from modelos.logica_juego import Buscaminas, ExcepcionJuego
 from modelos.basedatos_json import PartidaDAO
 from modelos.entidades import Partida as EntidadPartida
 from modelos.clases_abstractas import ControladorAbstracto
+
+class ControladorJuego:
+    def __init__(self, dao_partida):
+        self.dao_partida = dao_partida
+        self.juego_actual = None
+        self.tiempo_inicio_juego = None
+    
+    def iniciar_nueva_partida(self, filas: int, columnas: int, minas: int, dificultad: str, id_usuario: int = None):
+        """Inicia una nueva partida"""
+        from modelos.juego import JuegoBuscaminas
+        
+        self.juego_actual = JuegoBuscaminas(filas, columnas, minas)
+        self.juego_actual.inicializar_tablero()
+        self.tiempo_inicio_juego = time.time()
+        
+        # Guardar referencia de la partida si hay usuario
+        if id_usuario:
+            self.partida_actual_id = self.dao_partida.crear_partida(
+                id_usuario, dificultad, filas, columnas, minas
+            )
+    
+    def revelar_celda(self, fila: int, columna: int) -> Tuple[bool, bool]:
+        """Revela una celda y retorna (éxito, juego_terminado)"""
+        if not self.juego_actual:
+            return False, False
+            
+        exito = self.juego_actual.revelar_celda(fila, columna)
+        juego_terminado = self.juego_actual.partida_ganada or self.juego_actual.partida_perdida
+        
+        return exito, juego_terminado
+    
+    def alternar_bandera(self, fila: int, columna: int) -> bool:
+        """Coloca o quita una bandera en una celda"""
+        if not self.juego_actual:
+            return False
+            
+        return self.juego_actual.alternar_bandera(fila, columna)
+    
+    def obtener_estado(self) -> Dict[str, Any]:
+        """Obtiene el estado actual del juego"""
+        if not self.juego_actual:
+            return {"tablero": [], "juego_activo": False}
+            
+        return {
+            "tablero": self.juego_actual.tablero,
+            "juego_activo": not (self.juego_actual.partida_ganada or self.juego_actual.partida_perdida),
+            "partida_ganada": self.juego_actual.partida_ganada,
+            "partida_perdida": self.juego_actual.partida_perdida
+        }
+    
+    def obtener_minas_restantes(self) -> int:
+        """Obtiene el número de minas restantes por marcar"""
+        if not self.juego_actual:
+            return 0
+            
+        return self.juego_actual.obtener_minas_restantes()
+    
+    def obtener_dificultad(self) -> str:
+        """Obtiene la dificultad actual"""
+        if not self.juego_actual:
+            return "No seleccionada"
+        
+        minas = self.juego_actual.minas
+        if minas == 10:
+            return "Fácil"
+        elif minas == 30:
+            return "Medio"
+        elif minas == 60:
+            return "Difícil"
+        else:
+            return "Personalizada"
 
 class ControladorJuego(ControladorAbstracto):
     def __init__(self, dao_partida: PartidaDAO):
