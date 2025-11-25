@@ -1,0 +1,21 @@
+@startuml
+
+skinparam style strictuml
+skinparam classAttributeIconSize 0
+
+abstract class JuegoAbstracto {
+    + revelar(fila: int, columna: int): bool
+    + alternar_bandera(fila: int, columna: int): void
+    + verificar_victoria(): void
+}
+
+abstract class ControladorAbstracto {
+    + obtener_estado(): Dict[str, Any]
+}
+
+abstract class DAOAbstracto {
+    + guardar(entidad): int
+    + obtener_por_id(id_entidad: int)
+}
+
+@enduml

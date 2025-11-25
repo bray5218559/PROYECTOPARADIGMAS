@@ -9,5 +9,38 @@
     "mejor_tiempo_facil": null,
     "mejor_tiempo_medio": null,
     "mejor_tiempo_dificil": null
+  },
+  "2": {
+    "id": 2,
+    "nombre_usuario": "maria",
+    "correo": "mar@email.com",
+    "fecha_creacion": "2025-11-25T09:04:05.636014",
+    "partidas_totales": 0,
+    "partidas_ganadas": 0,
+    "mejor_tiempo_facil": null,
+    "mejor_tiempo_medio": null,
+    "mejor_tiempo_dificil": null
+  },
+  "3": {
+    "id": 3,
+    "nombre_usuario": "mari",
+    "correo": "mar@email.com",
+    "fecha_creacion": "2025-11-25T09:23:51.163520",
+    "partidas_totales": 0,
+    "partidas_ganadas": 0,
+    "mejor_tiempo_facil": null,
+    "mejor_tiempo_medio": null,
+    "mejor_tiempo_dificil": null
+  },
+  "4": {
+    "id": 4,
+    "nombre_usuario": "marena",
+    "correo": "m@email.com",
+    "fecha_creacion": "2025-11-25T09:41:43.973206",
+    "partidas_totales": 0,
+    "partidas_ganadas": 0,
+    "mejor_tiempo_facil": null,
+    "mejor_tiempo_medio": null,
+    "mejor_tiempo_dificil": null
   }
 }
